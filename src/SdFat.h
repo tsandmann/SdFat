@@ -435,7 +435,9 @@ typedef FsBaseFile SdBaseFile;
 #if defined __has_include
 #if __has_include(<FS.h>)
 #define HAS_INCLUDE_FS_H
+#ifndef TEENSYDUINO
 #warning File not defined because __has__include(FS.h)
+#endif
 #endif  // __has_include(<FS.h>)
 #endif  // defined __has_include
 #ifndef HAS_INCLUDE_FS_H
