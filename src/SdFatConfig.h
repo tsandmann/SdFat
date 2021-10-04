@@ -231,7 +231,11 @@ typedef uint8_t SdCsPin_t;
  * after the first call.  Extra flash will be required.
  */
 #ifndef MAINTAIN_FREE_CLUSTER_COUNT
+#if defined(__arm__)
+#define MAINTAIN_FREE_CLUSTER_COUNT 1
+#else
 #define MAINTAIN_FREE_CLUSTER_COUNT 0
+#endif
 #endif  // MAINTAIN_FREE_CLUSTER_COUNT
 //------------------------------------------------------------------------------
 /**
