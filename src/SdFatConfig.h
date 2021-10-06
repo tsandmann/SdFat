@@ -75,6 +75,7 @@
 #elif defined(__arm__)
 // ARM boards usually have plenty of memory
 #define SDFAT_FILE_TYPE 3
+#define USE_UTF8_LONG_NAMES 1
 #else  // defined(__AVR__) && FLASHEND < 0X8000
 // All other boards.
 #define SDFAT_FILE_TYPE 1
