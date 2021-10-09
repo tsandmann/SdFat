@@ -24,7 +24,11 @@ SdFat SD;
 // For Teensy 3.6 and SdFat.h use BUILTIN_SDCARD.
 #define SD_CS_PIN SS
 
+#if USE_SD_H
 File myFile;
+#else
+FsFile myFile;
+#endif
 
 void setup() {
   Serial.begin(9600);
