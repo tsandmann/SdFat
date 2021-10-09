@@ -85,6 +85,7 @@ bool FatFormatter::initFatDir(uint8_t fatType, uint32_t sectorCount) {
   size_t n;
   memset(m_secBuf, 0, BYTES_PER_SECTOR);
   writeMsg("Writing FAT ");
+#if 0
   for (uint32_t i = 1; i < sectorCount; i++) {
     if (!m_dev->writeSector(m_fatStart + i, m_secBuf)) {
        return false;
@@ -93,6 +94,11 @@ bool FatFormatter::initFatDir(uint8_t fatType, uint32_t sectorCount) {
       writeMsg(".");
     }
   }
+#else
+  if (!m_dev->writeSectorsSame(m_fatStart + 1, m_secBuf, sectorCount - 1)) {
+     return false;
+  }
+#endif
   writeMsg("\r\n");
   // Allocate reserved clusters and root for FAT32.
   m_secBuf[0] = 0XF8;
