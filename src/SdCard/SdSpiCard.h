@@ -143,6 +143,18 @@ class SdSpiCard {
    */
   bool readSectors(uint32_t sector, uint8_t* dst, size_t ns);
   /**
+   * Read multiple sectors with callback as each sector's data
+   *
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \param[in] callback Function to be called with each sector's data
+   * \param[in] context Pointer to be passed to the callback function
+   * \return true for success or false for failure.
+   */
+  bool readSectorsCallback(uint32_t sector, uint8_t* dst, size_t ns,
+   void (*callback)(uint32_t sector, uint8_t *buf, void *context), void *context);
+  /**
    * Read a card's CID register. The CID contains card identification
    * information such as Manufacturer ID, Product name, Product serial
    * number and Manufacturing date.

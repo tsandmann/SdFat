@@ -625,6 +625,42 @@ bool SdSpiCard::readSectors(uint32_t sector, uint8_t* dst, size_t ns) {
   return false;
 }
 //------------------------------------------------------------------------------
+bool SdSpiCard::readSectorsCallback(uint32_t sector, uint8_t* dst, size_t ns,
+ void (*callback)(uint32_t sector, uint8_t *buf, void *context), void *context) {
+#if ENABLE_DEDICATED_SPI
+  if (m_curState != READ_STATE || sector != m_curSector) {
+    if (!readStart(sector)) {
+      goto fail;
+    }
+    m_curSector = sector;
+    m_curState = READ_STATE;
+  }
+  for (size_t i = 0; i < ns; i++) {
+    if (readData(dst, 512)) {
+      callback(sector + i, dst, context);
+    } else {
+      goto fail;
+    }
+  }
+  m_curSector += ns;
+  return m_sharedSpi ? syncDevice() : true;
+#else  // ENABLE_DEDICATED_SPI
+  if (!readStart(sector)) {
+    goto fail;
+  }
+  for (size_t i = 0; i < ns; i++) {
+    if (readData(dst, 512)) {
+      callback(sector + i, dst, context);
+    } else {
+      goto fail;
+    }
+  }
+  return readStop();
+#endif  // ENABLE_DEDICATED_SPI
+ fail:
+  return false;
+}
+//------------------------------------------------------------------------------
 bool SdSpiCard::readStop() {
   if (cardCommand(CMD12, 0)) {
     error(SD_CARD_ERROR_CMD12);

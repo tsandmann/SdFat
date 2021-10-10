@@ -63,6 +63,25 @@ class BlockDeviceInterface {
    */
   virtual bool readSectors(uint32_t sector, uint8_t* dst, size_t ns) = 0;
 
+  /**
+   * Read multiple sectors with callback as each sector's data
+   *
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \param[in] callback Function to be called with each sector's data
+   * \param[in] context Pointer to be passed to the callback function
+   * \return true for success or false for failure.
+   */
+  virtual bool readSectorsCallback(uint32_t sector, uint8_t* dst, size_t ns,
+   void (*callback)(uint32_t sector, uint8_t *buf, void *context), void *context) {
+     for (size_t i = 0; i < ns; i++) {
+       if (!readSector(sector + i, dst)) return false;
+       callback(sector + i, dst, context);
+     }
+     return true;
+  }
+
   /** \return device size in sectors. */
   virtual uint32_t sectorCount() = 0;
 
