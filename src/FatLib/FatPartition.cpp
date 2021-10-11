@@ -395,8 +395,12 @@ int32_t FatPartition::freeClusterCount() {
 
   num_sectors = m_sectorsPerFat;
   //Serial.printf("  num_sectors = %u\n", num_sectors);
-
-  uint8_t buf[512];
+#if USE_SEPARATE_FAT_CACHE
+  uint8_t *buf = m_fatCache.clear();  // will clear out anything and return buffer 
+#else  
+  uint8_t *buf = m_cache.clear();  // will clear out anything and return buffer 
+#endif  // USE_SEPARATE_FAT_CACHE
+  if (buf == nullptr) return -1;
   if (fatType() == FAT_TYPE_FAT32) {
     if (!m_blockDev->readSectorsCallback(m_fatStartSector, buf, num_sectors, freeClusterCount_cb_fat32, &state)) return -1;
   } else {
