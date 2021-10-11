@@ -250,14 +250,16 @@ class SdSpiCard {
    */
   bool writeSectors(uint32_t sector, const uint8_t* src, size_t ns);
   /**
-   * Write multiple sectors with the same 512 byte data to an SD card.
+   * Write multiple sectors to SD card with callback to prep data.
    *
    * \param[in] sector Logical sector to be written.
    * \param[in] ns Number of sectors to be written.
-   * \param[in] src Pointer to the location of the data to be written.
+   * \param[in] callback Function to be called for each sector's data
+   * \param[in] context to pass to callback function
    * \return true for success or false for failure.
    */
-  bool writeSectorsSame(uint32_t sector, const uint8_t* src, size_t ns);
+  bool writeSectorsCallback(uint32_t sector, size_t ns,
+   const uint8_t * (*callback)(uint32_t sector, void *context), void *context);
   /** Write one data sector in a multiple sector write sequence.
    * \param[in] src Pointer to the location of the data to be written.
    * \return true for success or false for failure.

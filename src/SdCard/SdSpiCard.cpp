@@ -847,7 +847,8 @@ bool SdSpiCard::writeSectors(uint32_t sector, const uint8_t* src, size_t ns) {
   return false;
 }
 //------------------------------------------------------------------------------
-bool SdSpiCard::writeSectorsSame(uint32_t sector, const uint8_t* src, size_t ns) {
+bool SdSpiCard::writeSectorsCallback(uint32_t sector, size_t ns,
+ const uint8_t * (*callback)(uint32_t sector, void *context), void *context) {
 #if ENABLE_DEDICATED_SPI
   if (m_curState != WRITE_STATE || m_curSector != sector) {
     if (!writeStart(sector)) {
@@ -857,6 +858,7 @@ bool SdSpiCard::writeSectorsSame(uint32_t sector, const uint8_t* src, size_t ns)
     m_curState = WRITE_STATE;
   }
   for (size_t i = 0; i < ns; i++) {
+    const uint8_t *src = callback(sector + i, context);
     if (!writeData(src)) {
       goto fail;
     }
@@ -868,6 +870,7 @@ bool SdSpiCard::writeSectorsSame(uint32_t sector, const uint8_t* src, size_t ns)
     goto fail;
   }
   for (size_t i = 0; i < ns; i++) {
+    const uint8_t *src = callback(sector + i, context);
     if (!writeData(src)) {
       goto fail;
     }

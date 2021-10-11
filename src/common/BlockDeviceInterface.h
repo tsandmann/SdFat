@@ -110,17 +110,19 @@ class BlockDeviceInterface {
   virtual bool writeSectors(uint32_t sector, const uint8_t* src, size_t ns) = 0;
 
   /**
-   * Write multiple sectors with the same data.
+   * Write multiple sectors with callback for each sector's data
    *
    * \param[in] sector Logical sector to be written.
    * \param[in] ns Number of sectors to be written.
-   * \param[in] src Pointer to the location of the data to be written.
+   * \param[in] callback Function to be called for each sector's data
+   * \param[in] context Context to pass to callback function
    * \return true for success or false for failure.
    */
-  virtual bool writeSectorsSame(uint32_t sector, const uint8_t* src, size_t ns) {
-    for (size_t i = 0; i < ns; i++) {
-      if (!writeSector(sector + i, src)) return false;
-    }
+  virtual bool writeSectorsCallback(uint32_t sector, size_t ns,
+   const uint8_t * (*callback)(uint32_t sector, void *context), void *context) {
+     for (size_t i = 0; i < ns; i++) {
+       if (!writeSector(sector + i, callback(sector + i, context))) return false;
+     }
     return true;
   }
 };
