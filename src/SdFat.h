@@ -80,6 +80,10 @@ class SdBase : public Vol {
    * \return true for success or false for failure.
    */
   bool begin(SdSpiConfig spiConfig) {
+    spiConfigBackupPin = spiConfig.csPin;
+    spiConfigBackupOptions = spiConfig.options;
+    spiConfigBackupClock = spiConfig.maxSck;
+    spiConfigBackupPort = spiConfig.spiPort;
     return cardBegin(spiConfig) && Vol::begin(m_card);
   }
   //---------------------------------------------------------------------------
@@ -89,7 +93,20 @@ class SdBase : public Vol {
    * \return true for success or false for failure.
    */
   bool begin(SdioConfig sdioConfig) {
+    spiConfigBackupPin = 255;
+    sdioConfigBackup = sdioConfig;
     return cardBegin(sdioConfig) && Vol::begin(m_card);
+  }
+  //----------------------------------------------------------------------------
+  /** Restart library with same config, used after media removed and replaced */
+  bool restart() {
+    if (spiConfigBackupPin == 255) {
+      return begin(sdioConfigBackup);
+    } else {
+      SdSpiConfig spiConfig(spiConfigBackupPin, spiConfigBackupOptions,
+                            spiConfigBackupClock, spiConfigBackupPort);
+      return begin(spiConfig);
+    }
   }
   //----------------------------------------------------------------------------
   /** \return Pointer to SD card object. */
@@ -343,6 +360,11 @@ class SdBase : public Vol {
  private:
   SdCard* m_card;
   SdCardFactory m_cardFactory;
+  SdCsPin_t  spiConfigBackupPin;
+  uint8_t    spiConfigBackupOptions;
+  uint32_t   spiConfigBackupClock;
+  SpiPort_t* spiConfigBackupPort;
+  SdioConfig sdioConfigBackup;
 };
 //------------------------------------------------------------------------------
 /**
