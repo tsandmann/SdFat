@@ -242,6 +242,10 @@ class FatPartition {
     (void)change;
   }
 #endif  // MAINTAIN_FREE_CLUSTER_COUNT
+
+// freeClusterCount static helper functions
+static void freeClusterCount_cb_fat16(uint32_t sector, uint8_t *buf, void *context);
+static void freeClusterCount_cb_fat32(uint32_t sector, uint8_t *buf, void *context);
 // sector caches
   FsCache m_cache;
 #if USE_SEPARATE_FAT_CACHE

@@ -326,6 +326,39 @@ bool FatPartition::freeChain(uint32_t cluster) {
  fail:
   return false;
 }
+
+// Structure to use for doing free cluster count using callbacks
+struct FreeClusterCountStruct {
+  uint32_t clusters_to_do;
+  uint32_t free_count;
+};
+
+//------------------------------------------------------------------------------
+void FatPartition::freeClusterCount_cb_fat16(uint32_t sector, uint8_t *buf, void *context) {
+   struct FreeClusterCountStruct *state = (struct FreeClusterCountStruct *)context;
+  uint16_t *p = (uint16_t *)buf;
+  unsigned int n = state->clusters_to_do;
+  if (n > 256) n = 256;
+  uint16_t *e = p + n;
+  while (p < e) {
+    if (*p++ == 0) state->free_count++;
+  }
+  state->clusters_to_do -= n;
+}
+
+//------------------------------------------------------------------------------
+void FatPartition::freeClusterCount_cb_fat32(uint32_t sector, uint8_t *buf, void *context) {
+  struct FreeClusterCountStruct *state = (struct FreeClusterCountStruct *)context;
+  uint32_t *p = (uint32_t *)buf;
+  unsigned int n = state->clusters_to_do;
+  if (n > 128) n = 128;
+  uint32_t *e = p + n;
+  while (p < e) {
+    if (*p++ == 0) state->free_count++;
+  }
+  state->clusters_to_do -= n;
+}
+
 //------------------------------------------------------------------------------
 int32_t FatPartition::freeClusterCount() {
 #if MAINTAIN_FREE_CLUSTER_COUNT
@@ -333,61 +366,48 @@ int32_t FatPartition::freeClusterCount() {
     return m_freeClusterCount;
   }
 #endif  // MAINTAIN_FREE_CLUSTER_COUNT
-  uint32_t free = 0;
-  uint32_t sector;
-  uint32_t todo = m_lastCluster + 1;
-  uint16_t n;
-
-  if (FAT12_SUPPORT && fatType() == 12) {
+ if (FAT12_SUPPORT && fatType() == 12) {
+    uint32_t free = 0;
+    uint32_t todo = m_lastCluster + 1;
     for (unsigned i = 2; i < todo; i++) {
       uint32_t c;
       int8_t fg = fatGet(i, &c);
       if (fg < 0) {
         DBG_FAIL_MACRO;
-        goto fail;
+        return -1;
       }
       if (fg && c == 0) {
         free++;
       }
     }
-  } else if (fatType() == 16 || fatType() == 32) {
-    sector = m_fatStartSector;
-    while (todo) {
-      cache_t* pc = cacheFetchFat(sector++, FsCache::CACHE_FOR_READ);
-      if (!pc) {
-        DBG_FAIL_MACRO;
-        goto fail;
-      }
-      n =  fatType() == 16 ? m_bytesPerSector/2 : m_bytesPerSector/4;
-      if (todo < n) {
-        n = todo;
-      }
-      if (fatType() == 16) {
-        for (uint16_t i = 0; i < n; i++) {
-          if (pc->fat16[i] == 0) {
-            free++;
-          }
-        }
-      } else {
-        for (uint16_t i = 0; i < n; i++) {
-          if (pc->fat32[i] == 0) {
-            free++;
-          }
-        }
-      }
-      todo -= n;
-    }
-  } else {
-    // invalid FAT type
-    DBG_FAIL_MACRO;
-    goto fail;
+    return free;
   }
-  setFreeClusterCount(free);
-  return free;
 
- fail:
-  return -1;
+  struct FreeClusterCountStruct state;
+
+  state.free_count = 0;
+  state.clusters_to_do = m_lastCluster + 1;
+
+  uint32_t num_sectors;
+
+  //num_sectors = SD.sdfs.m_fVol->sectorsPerFat(); // edit FsVolume.h for public
+  //Serial.printf("  num_sectors = %u\n", num_sectors);
+
+  num_sectors = m_sectorsPerFat;
+  //Serial.printf("  num_sectors = %u\n", num_sectors);
+
+  uint8_t buf[512];
+  if (fatType() == FAT_TYPE_FAT32) {
+    if (!m_blockDev->readSectorsCallback(m_fatStartSector, buf, num_sectors, freeClusterCount_cb_fat32, &state)) return -1;
+  } else {
+    if (!m_blockDev->readSectorsCallback(m_fatStartSector, buf, num_sectors, freeClusterCount_cb_fat16, &state)) return -1;
+  }
+
+  setFreeClusterCount(state.free_count);
+  return state.free_count;
 }
+
+
 //------------------------------------------------------------------------------
 bool FatPartition::init(BlockDevice* dev, uint8_t part) {
   uint32_t clusterCount;
