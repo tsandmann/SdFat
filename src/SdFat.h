@@ -41,6 +41,8 @@
 #define SD_FAT_VERSION 20100
 /** SdFat version as string. */
 #define SD_FAT_VERSION_STR "2.1.0"
+/** This copy of SdFat has special modifications for Teensy. */
+#define SD_FAT_TEENSY_MODIFIED 1
 //==============================================================================
 /**
  * \class SdBase
