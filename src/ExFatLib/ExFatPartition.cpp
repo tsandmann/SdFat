@@ -26,6 +26,8 @@
 #include "../common/DebugMacros.h"
 #include "ExFatVolume.h"
 #include "../common/FsStructs.h"
+
+#define SUPPORT_GPT 1
 //------------------------------------------------------------------------------
 // return 0 if error, 1 if no space, else start cluster.
 uint32_t ExFatPartition::bitmapFind(uint32_t cluster, uint32_t count) {
@@ -271,28 +273,71 @@ bool ExFatPartition::init(BlockDevice* dev, uint8_t part) {
   BpbExFat_t* bpb;
   MbrSector_t* mbr;
   MbrPart_t* mp;
+  GPTPartitionHeader_t* gptph;
+  GPTPartitionEntrySector_t *gptes;
+  GPTPartitionEntryItem_t *gptei;
+
 
   m_fatType = 0;
   m_blockDev = dev;
   cacheInit(m_blockDev);
   cache = dataCacheGet(0, FsCache::CACHE_FOR_READ);
-  if (part > 4 || !cache) {
-    DBG_FAIL_MACRO;
-    goto fail;
-  }
-  if (part >= 1) {
-    mbr = reinterpret_cast<MbrSector_t*>(cache);
-    mp = &mbr->part[part - 1];
-    if ((mp->boot != 0 && mp->boot != 0X80) || mp->type == 0) {
+  #if SUPPORT_GPT 
+  // Lets see if we are on a GPT disk or not look for GPT guard
+  mbr = reinterpret_cast<MbrSector_t*>(cache);
+  mp = &mbr->part[0];
+  if (mp->type == 0xee) {
+    cache = dataCacheGet(1, FsCache::CACHE_FOR_READ);
+    gptph = reinterpret_cast<GPTPartitionHeader_t*>(cache);
+
+    // Lets do a little validation of this data.
+    if (!cache || (memcmp(gptph->signature, F("EFI PART"), 8) != 0)) {
       DBG_FAIL_MACRO;
       goto fail;
     }
-    volStart = getLe32(mp->relativeSectors);
-    cache = dataCacheGet(volStart, FsCache::CACHE_FOR_READ);
+    if (part > getLe32(gptph->numberPartitions)) {
+      DBG_FAIL_MACRO;
+      goto fail;
+    }
+    part--; // Make it 0 based... 4 entries per sector...
+    cache = dataCacheGet(2 + (part >> 2), FsCache::CACHE_FOR_READ);
     if (!cache) {
       DBG_FAIL_MACRO;
+      goto fail;      
+    }
+    gptes = reinterpret_cast<GPTPartitionEntrySector_t*>(cache);
+    gptei = &gptes->items[part & 0x3];
+
+    // Now make sure it is q guid we can handle.  For now only Microsoft Basic Data...
+    static const uint8_t microsoft_basic_data_partition_guid[16] PROGMEM = {0xA2, 0xA0, 0xD0, 0xEB, 0xE5, 0xB9, 0x33, 0x44, 0x87, 0xC0, 0x68, 0xB6, 0xB7, 0x26, 0x99, 0xC7};
+    if (memcmp((uint8_t *)gptei->partitionTypeGUID, microsoft_basic_data_partition_guid, 16) != 0) {
+      DBG_FAIL_MACRO;
+      goto fail;      
+    }
+    volStart = getLe64(gptei->firstLBA);
+  } else
+  #endif
+  {
+    // Simple MBR handling...
+    if (part > 4 || !cache) {
+      DBG_FAIL_MACRO;
       goto fail;
     }
+    if (part >= 1) {
+      mbr = reinterpret_cast<MbrSector_t*>(cache);
+      mp = &mbr->part[part - 1];
+      if ((mp->boot != 0 && mp->boot != 0X80) || mp->type == 0) {
+        DBG_FAIL_MACRO;
+        goto fail;
+      }
+      volStart = getLe32(mp->relativeSectors);
+    }
+  }
+
+  cache = dataCacheGet(volStart, FsCache::CACHE_FOR_READ);
+  if (!cache) {
+    DBG_FAIL_MACRO;
+    goto fail;
   }
   pbs = reinterpret_cast<pbs_t*>(cache);
   if (strncmp(pbs->oemName, "EXFAT", 5)) {

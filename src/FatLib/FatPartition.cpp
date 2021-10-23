@@ -27,6 +27,8 @@
 #include "../common/DebugMacros.h"
 #include "../common/FsStructs.h"
 #include "FatPartition.h"
+#define SUPPORT_GPT 1
+
 //------------------------------------------------------------------------------
 bool FatPartition::allocateCluster(uint32_t current, uint32_t* next) {
   uint32_t find;
@@ -414,6 +416,7 @@ int32_t FatPartition::freeClusterCount() {
 
 //------------------------------------------------------------------------------
 bool FatPartition::init(BlockDevice* dev, uint8_t part) {
+//  Serial.printf(" FatPartition::init(%x %u)\n", (uint32_t)dev, part);
   uint32_t clusterCount;
   uint32_t totalSectors;
   uint32_t volumeStartSector = 0;
@@ -421,29 +424,73 @@ bool FatPartition::init(BlockDevice* dev, uint8_t part) {
   pbs_t* pbs;
   BpbFat32_t* bpb;
   MbrSector_t* mbr;
+  MbrPart_t* mp;
   uint8_t tmp;
   m_fatType = 0;
   m_allocSearchStart = 1;
   m_cache.init(dev);
+  GPTPartitionHeader_t* gptph;
+  GPTPartitionEntrySector_t *gptes;
+  GPTPartitionEntryItem_t *gptei;
 #if USE_SEPARATE_FAT_CACHE
   m_fatCache.init(dev);
 #endif  // USE_SEPARATE_FAT_CACHE
-  // if part == 0 assume super floppy with FAT boot sector in sector zero
-  // if part > 0 assume mbr volume with partition table
-  if (part) {
-    if (part > 4) {
-      DBG_FAIL_MACRO;
-      goto fail;
-    }
-    mbr = reinterpret_cast<MbrSector_t*>
-          (cacheFetchData(0, FsCache::CACHE_FOR_READ));
-    MbrPart_t* mp = mbr->part + part - 1;
 
-    if (!mbr || mp->type == 0 || (mp->boot != 0 && mp->boot != 0X80)) {
+  mbr = reinterpret_cast<MbrSector_t*>
+        (cacheFetchData(0, FsCache::CACHE_FOR_READ));
+
+#if SUPPORT_GPT 
+  // Lets see if we are on a GPT disk or not look for GPT guard
+  mp = &mbr->part[0];
+  if (mp->type == 0xee) {
+    gptph = reinterpret_cast<GPTPartitionHeader_t*>(cacheFetchData(1, FsCache::CACHE_FOR_READ));
+
+    // Lets do a little validation of this data.
+    if (!gptph || (memcmp(gptph->signature, F("EFI PART"), 8) != 0)) {
       DBG_FAIL_MACRO;
       goto fail;
     }
-    volumeStartSector = getLe32(mp->relativeSectors);
+    uint32_t numberPartitions = getLe32(gptph->numberPartitions);
+    if (part > numberPartitions) {
+      DBG_FAIL_MACRO;
+      goto fail;
+    }
+    part--; // Make it 0 based... 4 entries per sector...
+    gptes = reinterpret_cast<GPTPartitionEntrySector_t*>
+      (cacheFetchData(2 + (part >> 2), FsCache::CACHE_FOR_READ));
+    if (!gptes) {
+      DBG_FAIL_MACRO;
+      goto fail;      
+    }
+    gptei = &gptes->items[part & 0x3];
+
+    // Now make sure it is q guid we can handle.  For now only Microsoft Basic Data...
+    static const uint8_t microsoft_basic_data_partition_guid[16] PROGMEM = {0xA2, 0xA0, 0xD0, 0xEB, 0xE5, 0xB9, 0x33, 0x44, 0x87, 0xC0, 0x68, 0xB6, 0xB7, 0x26, 0x99, 0xC7};
+    if (memcmp((uint8_t *)gptei->partitionTypeGUID, microsoft_basic_data_partition_guid, 16) != 0) {
+      DBG_FAIL_MACRO;
+      goto fail;      
+    }
+    volumeStartSector = getLe64(gptei->firstLBA);
+
+  } else
+  #endif
+  {
+
+    // if part == 0 assume super floppy with FAT boot sector in sector zero
+    // if part > 0 assume mbr volume with partition table
+    if (part) {
+      if (part > 4) {
+        DBG_FAIL_MACRO;
+        goto fail;
+      }
+      mp = mbr->part + part - 1;
+
+      if (!mbr || mp->type == 0 || (mp->boot != 0 && mp->boot != 0X80)) {
+        DBG_FAIL_MACRO;
+        goto fail;
+      }
+      volumeStartSector = getLe32(mp->relativeSectors);
+    }
   }
   pbs = reinterpret_cast<pbs_t*>
         (cacheFetchData(volumeStartSector, FsCache::CACHE_FOR_READ));
