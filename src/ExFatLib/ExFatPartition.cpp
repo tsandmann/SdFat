@@ -28,6 +28,7 @@
 #include "../common/FsStructs.h"
 
 #define SUPPORT_GPT 1
+#define SUPPORT_EXTENDED 1
 //------------------------------------------------------------------------------
 // return 0 if error, 1 if no space, else start cluster.
 uint32_t ExFatPartition::bitmapFind(uint32_t cluster, uint32_t count) {
@@ -267,21 +268,25 @@ uint32_t ExFatPartition::freeClusterCount() {
 }
 //------------------------------------------------------------------------------
 bool ExFatPartition::init(BlockDevice* dev, uint8_t part) {
+  Serial.printf("ExFatPartition::init(%x, %u)\n", (uint32_t)dev, part); Serial.flush();
   uint32_t volStart = 0;
   uint8_t* cache;
   pbs_t* pbs;
   BpbExFat_t* bpb;
   MbrSector_t* mbr;
   MbrPart_t* mp;
+  #if SUPPORT_GPT 
   GPTPartitionHeader_t* gptph;
   GPTPartitionEntrySector_t *gptes;
   GPTPartitionEntryItem_t *gptei;
-
+  #endif
 
   m_fatType = 0;
   m_blockDev = dev;
   cacheInit(m_blockDev);
   cache = dataCacheGet(0, FsCache::CACHE_FOR_READ);
+  if (!cache) { DBG_FAIL_MACRO; goto fail; }
+  Serial.println("    After datacacheGet");
   #if SUPPORT_GPT 
   // Lets see if we are on a GPT disk or not look for GPT guard
   mbr = reinterpret_cast<MbrSector_t*>(cache);
@@ -318,22 +323,77 @@ bool ExFatPartition::init(BlockDevice* dev, uint8_t part) {
   } else
   #endif
   {
-    // Simple MBR handling...
-    if (part > 4 || !cache) {
-      DBG_FAIL_MACRO;
-      goto fail;
-    }
+    // MBR handling...
     if (part >= 1) {
       mbr = reinterpret_cast<MbrSector_t*>(cache);
+
+      #if SUPPORT_EXTENDED
+      // Extended support we need to walk through the partitions to see if there is an extended partition
+      // that we need to walk into. 
+      part--; // zero base it.
+      // short cut:
+      bool part_index_item_valid = false;
+      if (part < 4) {
+        // try quick way through
+        mp = &mbr->part[part];
+        if (((mp->boot == 0) || (mp->boot == 0X80)) && (mp->type != 0) && (mp->type != 0xf)) {
+          part_index_item_valid = true;
+          volStart = getLe32(mp->relativeSectors);
+          Serial.println("    >> Found direct"); Serial.flush();
+        }
+      }  
+      if (! part_index_item_valid) {
+        Serial.println("    >> Need to walk list look for Extended type");
+        uint8_t index_part;
+        for (index_part = 0; index_part < 4; index_part++) {
+          mp = &mbr->part[index_part];
+          if ((mp->boot != 0 && mp->boot != 0X80) || mp->type == 0 || index_part > part) { DBG_FAIL_MACRO; goto fail; }
+          if (mp->type == 0xf) break;
+        }
+
+        if (index_part == 4) { DBG_FAIL_MACRO; goto fail; } // no extended partition found. 
+        Serial.printf("    Found Extended: %u\n", index_part);
+
+        // Our partition if it exists is in extended partition. 
+        uint32_t next_mbr = getLe32(mp->relativeSectors);
+        for(;;) {
+          Serial.printf("    Index: %u Read Block: %u\n", index_part, next_mbr);
+          cache = dataCacheGet(next_mbr, FsCache::CACHE_FOR_READ);
+          if (!cache) { Serial.println("    Failed read");DBG_FAIL_MACRO; goto fail; }
+          Serial.println("    After Read Block"); Serial.flush();
+          mbr = reinterpret_cast<MbrSector_t*>(cache);
+          if (index_part == part) break; // should be at that entry
+          // else we need to see if it points to others...
+          mp = &mbr->part[1];
+          volStart = getLe32(mp->relativeSectors);
+          Serial.printf("    Check for next: type: %u start:%u\n ", mp->type, volStart);
+          if ((mp->type == 5) && volStart) {
+            next_mbr = next_mbr + volStart;
+            index_part++; 
+          } else { DBG_FAIL_MACRO; goto fail; }
+        }
+        // If we are here than we shoul hopefully be at start of segment...
+        mp = &mbr->part[0];
+        volStart = getLe32(mp->relativeSectors) + next_mbr;
+        Serial.printf("    Exit loop %u\n", volStart);
+      }
+      #else
+      // Simple 
+      if (part > 4) {
+        DBG_FAIL_MACRO;
+        goto fail;
+      }
       mp = &mbr->part[part - 1];
       if ((mp->boot != 0 && mp->boot != 0X80) || mp->type == 0) {
         DBG_FAIL_MACRO;
         goto fail;
       }
       volStart = getLe32(mp->relativeSectors);
+      #endif
     }
   }
 
+  Serial.printf("    Read in Data sector: %u\n", (uint32_t)volStart);
   cache = dataCacheGet(volStart, FsCache::CACHE_FOR_READ);
   if (!cache) {
     DBG_FAIL_MACRO;
@@ -361,9 +421,11 @@ bool ExFatPartition::init(BlockDevice* dev, uint8_t part) {
   m_bitmapStart = 0;
   bitmapFind(0, 1);
   m_fatType = FAT_TYPE_EXFAT;
+  Serial.println("    Valid ExFat");
   return true;
 
  fail:
+  Serial.println("    Fail");
   return false;
 }
 //------------------------------------------------------------------------------
