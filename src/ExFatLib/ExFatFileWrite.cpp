@@ -493,7 +493,7 @@ bool ExFatFile::timestamp(uint8_t flags, uint16_t year, uint8_t month,
   time = FS_TIME(hour, minute, second);
   ms10 = second & 1 ? 100 : 0;
 
-  for (uint8_t is = 0;; is++) {
+  for (uint8_t is = 0; is <= m_setCount ; is++) {
     cache = dirCache(is, FsCache::CACHE_FOR_READ);
     if (!cache) {
       DBG_FAIL_MACRO;
