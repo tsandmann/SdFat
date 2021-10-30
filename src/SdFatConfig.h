@@ -394,6 +394,21 @@ typedef uint8_t SdCsPin_t;
 #else  // __arm__
 #define USE_EXFAT_BITMAP_CACHE 0
 #endif  // __arm__
+
+//------------------------------------------------------------------------------
+/**
+ * Set SUPPORT_GPT_AND_EXTENDED_PATITIONS  nonzero to support partitions
+ * on Extended MBR extended partitions and some support for GPT configured
+ * drives.
+ */
+#ifndef SUPPORT_GPT_AND_EXTENDED_PATITIONS
+#ifdef __arm__
+#define SUPPORT_GPT_AND_EXTENDED_PATITIONS 1
+#else  // __arm__
+#define SUPPORT_GPT_AND_EXTENDED_PATITIONS 0
+#endif  // __arm__
+#endif // SUPPORT_GPT_AND_EXTENDED_PATITIONS
+  
 //------------------------------------------------------------------------------
 /**
  * Set USE_MULTI_SECTOR_IO nonzero to use multi-sector SD read/write.
