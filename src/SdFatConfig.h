@@ -367,7 +367,7 @@ typedef uint8_t SdCsPin_t;
  * with no memory alignment restrictions.
  */
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__\
-  && (defined(__AVR__) || defined(__ARM_FEATURE_UNALIGNED))
+  && (defined(__AVR__) || defined(__ARM_FEATURE_UNALIGNED) || defined(__ARM_ARCH_7EM__))
 #define USE_SIMPLE_LITTLE_ENDIAN 1
 #else  // __BYTE_ORDER_
 #define USE_SIMPLE_LITTLE_ENDIAN 0

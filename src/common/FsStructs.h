@@ -25,6 +25,7 @@
 #ifndef FsStructs_h
 #define FsStructs_h
 #include <stdint.h>
+#include "SdFatConfig.h"
 //-----------------------------------------------------------------------------
 void lbaToMbrChs(uint8_t* chs, uint32_t capacityMB, uint32_t lba);
 //-----------------------------------------------------------------------------
