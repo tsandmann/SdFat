@@ -274,6 +274,7 @@ bool ExFatPartition::init(BlockDevice* dev, uint8_t part) {
   uint32_t firstLBA;
   #else
   MbrSector_t* mbr;
+  MbrPart_t* mp;
   #endif
   BpbExFat_t* bpb;
 
@@ -293,10 +294,12 @@ bool ExFatPartition::init(BlockDevice* dev, uint8_t part) {
 
   #else
   // Simple 
-  if (part > 4) {
+  cache = dataCacheGet(0, FsCache::CACHE_FOR_READ);
+  if (part < 1 || part > 4 || !cache) {
     DBG_FAIL_MACRO;
     goto fail;
   }
+  mbr = reinterpret_cast<MbrSector_t*>(cache);
   mp = &mbr->part[part - 1];
   if ((mp->boot != 0 && mp->boot != 0X80) || mp->type == 0) {
     DBG_FAIL_MACRO;

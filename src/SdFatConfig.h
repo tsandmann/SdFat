@@ -402,7 +402,7 @@ typedef uint8_t SdCsPin_t;
  * drives.
  */
 #ifndef SUPPORT_GPT_AND_EXTENDED_PATITIONS
-#ifdef __arm__
+#if defined(__arm__) && !defined(__MKL26Z64__)
 #define SUPPORT_GPT_AND_EXTENDED_PATITIONS 1
 #else  // __arm__
 #define SUPPORT_GPT_AND_EXTENDED_PATITIONS 0

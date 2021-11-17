@@ -446,10 +446,11 @@ bool FatPartition::init(BlockDevice* dev, uint8_t part) {
   }
   volumeStartSector = firstLBA;
   #else
-  if (part > 4) {
+  if (part < 1 || part > 4) {
     DBG_FAIL_MACRO;
     goto fail;
   }
+  mbr = reinterpret_cast<MbrSector_t*>(cacheFetchData(0, FsCache::CACHE_FOR_READ));
   mp = mbr->part + part - 1;
 
   if (!mbr || mp->type == 0 || (mp->boot != 0 && mp->boot != 0X80)) {
