@@ -162,7 +162,7 @@
  *   }
  */
 #ifndef USE_BLOCK_DEVICE_INTERFACE
-#define USE_BLOCK_DEVICE_INTERFACE 0
+#define USE_BLOCK_DEVICE_INTERFACE 1
 #endif  // USE_BLOCK_DEVICE_INTERFACE
  /**
  * SD_CHIP_SELECT_MODE defines how the functions
