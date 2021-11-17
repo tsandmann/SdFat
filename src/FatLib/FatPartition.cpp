@@ -26,7 +26,9 @@
 #define DBG_FILE "FatPartition.cpp"
 #include "../common/DebugMacros.h"
 #include "../common/FsStructs.h"
+#include "../common/FsGetPartitionInfo.h"
 #include "FatPartition.h"
+
 //------------------------------------------------------------------------------
 bool FatPartition::allocateCluster(uint32_t current, uint32_t* next) {
   uint32_t find;
@@ -414,13 +416,20 @@ int32_t FatPartition::freeClusterCount() {
 
 //------------------------------------------------------------------------------
 bool FatPartition::init(BlockDevice* dev, uint8_t part) {
+//  Serial.printf(" FatPartition::init(%x %u)\n", (uint32_t)dev, part);
   uint32_t clusterCount;
   uint32_t totalSectors;
   uint32_t volumeStartSector = 0;
   m_blockDev = dev;
   pbs_t* pbs;
   BpbFat32_t* bpb;
+  #if SUPPORT_GPT_AND_EXTENDED_PATITIONS 
+  uint32_t firstLBA;
+  #else
   MbrSector_t* mbr;
+  MbrPart_t* mp;
+  #endif
+
   uint8_t tmp;
   m_fatType = 0;
   m_allocSearchStart = 1;
@@ -428,23 +437,28 @@ bool FatPartition::init(BlockDevice* dev, uint8_t part) {
 #if USE_SEPARATE_FAT_CACHE
   m_fatCache.init(dev);
 #endif  // USE_SEPARATE_FAT_CACHE
-  // if part == 0 assume super floppy with FAT boot sector in sector zero
-  // if part > 0 assume mbr volume with partition table
-  if (part) {
-    if (part > 4) {
-      DBG_FAIL_MACRO;
-      goto fail;
-    }
-    mbr = reinterpret_cast<MbrSector_t*>
-          (cacheFetchData(0, FsCache::CACHE_FOR_READ));
-    MbrPart_t* mp = mbr->part + part - 1;
 
-    if (!mbr || mp->type == 0 || (mp->boot != 0 && mp->boot != 0X80)) {
-      DBG_FAIL_MACRO;
-      goto fail;
-    }
-    volumeStartSector = getLe32(mp->relativeSectors);
+  #if SUPPORT_GPT_AND_EXTENDED_PATITIONS 
+  FsGetPartitionInfo::voltype_t vt = FsGetPartitionInfo::getPartitionInfo(m_blockDev, part, cacheClear(), &firstLBA);
+  if ((vt == FsGetPartitionInfo::INVALID_VOL) || (vt == FsGetPartitionInfo::OTHER_VOL)) {
+    DBG_FAIL_MACRO;
+    goto fail;    
   }
+  volumeStartSector = firstLBA;
+  #else
+  if (part > 4) {
+    DBG_FAIL_MACRO;
+    goto fail;
+  }
+  mp = mbr->part + part - 1;
+
+  if (!mbr || mp->type == 0 || (mp->boot != 0 && mp->boot != 0X80)) {
+    DBG_FAIL_MACRO;
+    goto fail;
+  }
+  volumeStartSector = getLe32(mp->relativeSectors);
+  #endif
+
   pbs = reinterpret_cast<pbs_t*>
         (cacheFetchData(volumeStartSector, FsCache::CACHE_FOR_READ));
   bpb = reinterpret_cast<BpbFat32_t*>(pbs->bpb);
