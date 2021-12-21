@@ -27,7 +27,11 @@ SdFat SD;
 #if USE_SD_H
 File myFile;
 #else
-FsFile myFile;
+ #ifdef __arm__
+ FsFile myFile;
+ #else
+ File32 myFile;
+ #endif
 #endif
 
 void setup() {
