@@ -423,6 +423,7 @@ bool FatPartition::init(BlockDevice* dev, uint8_t part) {
   m_blockDev = dev;
   pbs_t* pbs;
   BpbFat32_t* bpb;
+  uint8_t mbrType = 0;
   #if SUPPORT_GPT_AND_EXTENDED_PATITIONS 
   uint32_t firstLBA;
   #else
@@ -439,7 +440,8 @@ bool FatPartition::init(BlockDevice* dev, uint8_t part) {
 #endif  // USE_SEPARATE_FAT_CACHE
 
   #if SUPPORT_GPT_AND_EXTENDED_PATITIONS 
-  FsGetPartitionInfo::voltype_t vt = FsGetPartitionInfo::getPartitionInfo(m_blockDev, part, cacheClear(), &firstLBA);
+  FsGetPartitionInfo::voltype_t vt = FsGetPartitionInfo::getPartitionInfo(m_blockDev, part, cacheClear(), &firstLBA, 
+        nullptr, nullptr, nullptr, &mbrType);
   if ((vt == FsGetPartitionInfo::INVALID_VOL) || (vt == FsGetPartitionInfo::OTHER_VOL)) {
     DBG_FAIL_MACRO;
     goto fail;    
@@ -508,7 +510,7 @@ bool FatPartition::init(BlockDevice* dev, uint8_t part) {
   // Indicate unknown number of free clusters.
   setFreeClusterCount(-1);
   // FAT type is determined by cluster count
-  if (clusterCount < 4085) {
+  if ((mbrType == 1) || (clusterCount < 4085)) {
     m_fatType = 12;
     if (!FAT12_SUPPORT) {
       DBG_FAIL_MACRO;

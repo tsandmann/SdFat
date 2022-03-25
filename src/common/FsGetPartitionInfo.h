@@ -37,7 +37,8 @@ namespace FsGetPartitionInfo {
 
 typedef enum {INVALID_VOL=0, MBR_VOL, EXT_VOL, GPT_VOL, OTHER_VOL} voltype_t; // what type of volume did the mapping return
 voltype_t getPartitionInfo(BlockDeviceInterface *blockDev, uint8_t part, uint8_t *secBuf,
-      uint32_t *pfirstLBA, uint32_t *psectorCount=nullptr, uint32_t *pmbrLBA=nullptr, uint8_t *pmbrPart=nullptr);
+      uint32_t *pfirstLBA, uint32_t *psectorCount=nullptr, uint32_t *pmbrLBA=nullptr, uint8_t *pmbrPart=nullptr,
+      uint8_t *pmbrType=nullptr);
 
 }  // namespace FsGetPartitionInfo
 #endif  // FsGetPartitionInfo_h
