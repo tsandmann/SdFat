@@ -463,7 +463,7 @@ bool FatPartition::init(BlockDevice* dev, uint8_t part) {
   pbs = reinterpret_cast<pbs_t*>
         (cacheFetchData(volumeStartSector, FsCache::CACHE_FOR_READ));
   bpb = reinterpret_cast<BpbFat32_t*>(pbs->bpb);
-  if (!pbs || bpb->fatCount != 2 || getLe16(bpb->bytesPerSector) != 512) {
+  if (!pbs || getLe16(bpb->bytesPerSector) != 512) {
     DBG_FAIL_MACRO;
     goto fail;
   }
@@ -488,7 +488,7 @@ bool FatPartition::init(BlockDevice* dev, uint8_t part) {
   m_rootDirEntryCount = getLe16(bpb->rootDirEntryCount);
 
   // directory start for FAT16 dataStart for FAT32
-  m_rootDirStart = m_fatStartSector + 2 * m_sectorsPerFat;
+  m_rootDirStart = m_fatStartSector + bpb->fatCount * m_sectorsPerFat;
   // data start for FAT16 and FAT32
   m_dataStartSector = m_rootDirStart +
     ((32 * m_rootDirEntryCount + m_bytesPerSector - 1)/m_bytesPerSector);
