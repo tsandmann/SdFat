@@ -194,6 +194,7 @@ class FatPartition {
   uint8_t  m_clusterSectorMask;       // Mask to extract sector of cluster.
   uint8_t  m_sectorsPerClusterShift;  // Cluster count to sector count shift.
   uint8_t  m_fatType = 0;             // Volume type (12, 16, OR 32).
+  uint8_t  m_fatCount = 2;            // How many fats mostly 2 will support 1
   uint16_t m_rootDirEntryCount;       // Number of entries in FAT16 root dir.
   uint32_t m_allocSearchStart;        // Start cluster for alloc search.
   uint32_t m_sectorsPerFat;           // FAT size in sectors
@@ -251,7 +252,7 @@ static void freeClusterCount_cb_fat32(uint32_t sector, uint8_t *buf, void *conte
 #if USE_SEPARATE_FAT_CACHE
   FsCache m_fatCache;
   cache_t* cacheFetchFat(uint32_t sector, uint8_t options) {
-    options |= FsCache::CACHE_STATUS_MIRROR_FAT;
+    if (m_fatCount == 2) options |= FsCache::CACHE_STATUS_MIRROR_FAT;
     return reinterpret_cast<cache_t*>(m_fatCache.get(sector, options));
   }
   bool cacheSync() {
@@ -259,7 +260,7 @@ static void freeClusterCount_cb_fat32(uint32_t sector, uint8_t *buf, void *conte
   }
 #else  // USE_SEPARATE_FAT_CACHE
   cache_t* cacheFetchFat(uint32_t sector, uint8_t options) {
-    options |= FsCache::CACHE_STATUS_MIRROR_FAT;
+    if (m_fatCount == 2) options |= FsCache::CACHE_STATUS_MIRROR_FAT;
     return cacheFetchData(sector, options);
   }
   bool cacheSync() {

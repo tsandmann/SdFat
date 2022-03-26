@@ -469,6 +469,13 @@ bool FatPartition::init(BlockDevice* dev, uint8_t part) {
     DBG_FAIL_MACRO;
     goto fail;
   }
+
+  m_fatCount = bpb->fatCount;
+  // handle fat counts 1 or 2...
+  if ((m_fatCount != 1) && (m_fatCount != 2)) {
+    DBG_FAIL_MACRO;
+    goto fail;
+  }
   m_sectorsPerCluster = bpb->sectorsPerCluster;
   m_clusterSectorMask = m_sectorsPerCluster - 1;
   // determine shift that is same as multiply by m_sectorsPerCluster
