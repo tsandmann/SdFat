@@ -423,6 +423,7 @@ bool FatPartition::init(BlockDevice* dev, uint8_t part) {
   m_blockDev = dev;
   pbs_t* pbs;
   BpbFat32_t* bpb;
+  uint8_t mbrType = 0;
   #if SUPPORT_GPT_AND_EXTENDED_PATITIONS 
   uint32_t firstLBA;
   #else
@@ -439,7 +440,8 @@ bool FatPartition::init(BlockDevice* dev, uint8_t part) {
 #endif  // USE_SEPARATE_FAT_CACHE
 
   #if SUPPORT_GPT_AND_EXTENDED_PATITIONS 
-  FsGetPartitionInfo::voltype_t vt = FsGetPartitionInfo::getPartitionInfo(m_blockDev, part, cacheClear(), &firstLBA);
+  FsGetPartitionInfo::voltype_t vt = FsGetPartitionInfo::getPartitionInfo(m_blockDev, part, cacheClear(), &firstLBA, 
+        nullptr, nullptr, nullptr, &mbrType);
   if ((vt == FsGetPartitionInfo::INVALID_VOL) || (vt == FsGetPartitionInfo::OTHER_VOL)) {
     DBG_FAIL_MACRO;
     goto fail;    
@@ -463,7 +465,14 @@ bool FatPartition::init(BlockDevice* dev, uint8_t part) {
   pbs = reinterpret_cast<pbs_t*>
         (cacheFetchData(volumeStartSector, FsCache::CACHE_FOR_READ));
   bpb = reinterpret_cast<BpbFat32_t*>(pbs->bpb);
-  if (!pbs || bpb->fatCount != 2 || getLe16(bpb->bytesPerSector) != 512) {
+  if (!pbs || getLe16(bpb->bytesPerSector) != 512) {
+    DBG_FAIL_MACRO;
+    goto fail;
+  }
+
+  m_fatCount = bpb->fatCount;
+  // handle fat counts 1 or 2...
+  if ((m_fatCount != 1) && (m_fatCount != 2)) {
     DBG_FAIL_MACRO;
     goto fail;
   }
@@ -488,7 +497,7 @@ bool FatPartition::init(BlockDevice* dev, uint8_t part) {
   m_rootDirEntryCount = getLe16(bpb->rootDirEntryCount);
 
   // directory start for FAT16 dataStart for FAT32
-  m_rootDirStart = m_fatStartSector + 2 * m_sectorsPerFat;
+  m_rootDirStart = m_fatStartSector + bpb->fatCount * m_sectorsPerFat;
   // data start for FAT16 and FAT32
   m_dataStartSector = m_rootDirStart +
     ((32 * m_rootDirEntryCount + m_bytesPerSector - 1)/m_bytesPerSector);
@@ -508,7 +517,7 @@ bool FatPartition::init(BlockDevice* dev, uint8_t part) {
   // Indicate unknown number of free clusters.
   setFreeClusterCount(-1);
   // FAT type is determined by cluster count
-  if (clusterCount < 4085) {
+  if ((mbrType == 1) || (clusterCount < 4085)) {
     m_fatType = 12;
     if (!FAT12_SUPPORT) {
       DBG_FAIL_MACRO;

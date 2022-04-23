@@ -316,7 +316,7 @@ typedef uint8_t SdCsPin_t;
  * FAT12 has not been well tested and requires additional flash.
  */
 #ifndef FAT12_SUPPORT
-#define FAT12_SUPPORT 0
+#define FAT12_SUPPORT 1
 #endif  // FAT12_SUPPORT
 //------------------------------------------------------------------------------
 /**
