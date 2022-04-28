@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2011-2020 Bill Greiman
+ * Copyright (c) 2011-2021 Bill Greiman
  * This file is part of the SdFat library for SD memory cards.
  *
  * MIT License
@@ -78,7 +78,7 @@
 #define USE_UTF8_LONG_NAMES 1
 #else  // defined(__AVR__) && FLASHEND < 0X8000
 // All other boards.
-#define SDFAT_FILE_TYPE 1
+#define SDFAT_FILE_TYPE 3
 #endif  // defined(__AVR__) && FLASHEND < 0X8000
 #endif  // SDFAT_FILE_TYPE
 //------------------------------------------------------------------------------
@@ -141,10 +141,10 @@
 #endif  // SD_MAX_INIT_RATE_KHZ
 /**
  * Set USE_BLOCK_DEVICE_INTERFACE nonzero to use a generic block device.
- * This allow use of an external BlockDevice driver that is derived from
- * the BlockDeviceInterface like this:
+ * This allow use of an external FsBlockDevice driver that is derived from
+ * the FsBlockDeviceInterface like this:
  *
- * class UsbMscDriver : public BlockDeviceInterface {
+ * class UsbMscDriver : public FsBlockDeviceInterface {
  *   ... code for USB mass storage class driver.
  * };
  *
@@ -348,19 +348,6 @@ typedef uint8_t SdCsPin_t;
 #ifndef ENDL_CALLS_FLUSH
 #define ENDL_CALLS_FLUSH 0
 #endif  // ENDL_CALLS_FLUSH
-//------------------------------------------------------------------------------
-/**
- * Handle Watchdog Timer for WiFi modules.
- *
- * Yield will be called before accessing the SPI bus if it has been more
- * than WDT_YIELD_TIME_MILLIS milliseconds since the last yield call by SdFat.
- */
-#if defined(PLATFORM_ID) || defined(ESP8266)
-// If Particle device or ESP8266 call yield.
-#define WDT_YIELD_TIME_MILLIS 100
-#else  // defined(PLATFORM_ID) || defined(ESP8266)
-#define WDT_YIELD_TIME_MILLIS 0
-#endif  // defined(PLATFORM_ID) || defined(ESP8266)
 //------------------------------------------------------------------------------
 /**
  * Set USE_SIMPLE_LITTLE_ENDIAN nonzero for little endian processors

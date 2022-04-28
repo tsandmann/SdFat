@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2011-2020 Bill Greiman
+ * Copyright (c) 2011-2021 Bill Greiman
  * This file is part of the SdFat library for SD memory cards.
  *
  * MIT License
@@ -44,6 +44,10 @@ inline void SdSpiArduinoDriver::begin(SdSpiConfig spiConfig) {
     m_spi = &SPI;
   }
   m_spi->begin();
+}
+//------------------------------------------------------------------------------
+inline void SdSpiArduinoDriver::end() {
+  m_spi->end();
 }
 //------------------------------------------------------------------------------
 inline void SdSpiArduinoDriver::deactivate() {

@@ -31,15 +31,16 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
+#include "../SdFatConfig.h"
 
-#ifdef F
-#warning F() macro defined for non Arduino System
-#elif defined(__AVR__)
+#ifndef F
+#if defined(__AVR__)
 #include <avr/pgmspace.h>
 class __FlashStringHelper;
-#define F(str) (reinterpret_cast<const __FlashStringHelper *>(PSTR(str)))
-#else  // F
+#define F(string_literal) (reinterpret_cast<const __FlashStringHelper *>(PSTR(string_literal)))
+#else  // defined(__AVR__)
 #define F(str) (str)
+#endif  // defined(__AVR__)
 #endif  // F
 
 #ifdef BIN

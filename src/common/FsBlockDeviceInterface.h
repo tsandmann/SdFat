@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2011-2020 Bill Greiman
+ * Copyright (c) 2011-2021 Bill Greiman
  * This file is part of the SdFat library for SD memory cards.
  *
  * MIT License
@@ -24,22 +24,24 @@
  */
 /**
  * \file
- * \brief BlockDeviceInterface include file.
+ * \brief FsBlockDeviceInterface include file.
  */
-#ifndef BlockDeviceInterface_h
-#define BlockDeviceInterface_h
+#ifndef FsBlockDeviceInterface_h
+#define FsBlockDeviceInterface_h
 #include <stdint.h>
 #include <stddef.h>
-#include "SdFatConfig.h"
 /**
- * \class BlockDeviceInterface
- * \brief BlockDeviceInterface class.
+ * \class FsBlockDeviceInterface
+ * \brief FsBlockDeviceInterface class.
  */
-class BlockDeviceInterface {
+class FsBlockDeviceInterface {
  public:
-  virtual ~BlockDeviceInterface() {}
+  virtual ~FsBlockDeviceInterface() {}
+
+  /** end use of device */
+  virtual void end() {}
   /**
-   * Check for BlockDevice busy.
+   * Check for FsBlockDevice busy.
    *
    * \return true if busy else false.
    */
@@ -126,4 +128,4 @@ class BlockDeviceInterface {
     return true;
   }
 };
-#endif  // BlockDeviceInterface_h
+#endif  // FsBlockDeviceInterface_h

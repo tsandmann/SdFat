@@ -26,7 +26,7 @@
 namespace FsGetPartitionInfo {
   static const uint8_t mbdpGuid[16] PROGMEM = {0xA2, 0xA0, 0xD0, 0xEB, 0xE5, 0xB9, 0x33, 0x44, 0x87, 0xC0, 0x68, 0xB6, 0xB7, 0x26, 0x99, 0xC7};
 
-  voltype_t getPartitionInfo(BlockDeviceInterface *blockDev, uint8_t part, uint8_t *secBuf,
+  voltype_t getPartitionInfo(FsBlockDeviceInterface *blockDev, uint8_t part, uint8_t *secBuf,
       uint32_t *pfirstLBA, uint32_t *psectorCount, uint32_t *pmbrLBA, uint8_t *pmbrPart, uint8_t *pmbrType) {
 
     //Serial.printf("PFsLib::getPartitionInfo(%x, %u)\n", (uint32_t)blockDev, part);
@@ -62,7 +62,7 @@ namespace FsGetPartitionInfo {
       GPTPartitionEntrySector_t *gptes = reinterpret_cast<GPTPartitionEntrySector_t*>(secBuf);
       GPTPartitionEntryItem_t *gptei = &gptes->items[mbrPart];
 
-      // Mow extract the data...
+      // Now extract the data...
       firstLBA = getLe64(gptei->firstLBA);
       sectorCount = 1 + getLe64(gptei->lastLBA) - getLe64(gptei->firstLBA);
       if ((firstLBA == 0) && (sectorCount == 1)) return INVALID_VOL;

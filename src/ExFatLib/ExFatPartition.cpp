@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2011-2020 Bill Greiman
+ * Copyright (c) 2011-2021 Bill Greiman
  * This file is part of the SdFat library for SD memory cards.
  *
  * MIT License
@@ -24,10 +24,8 @@
  */
 #define DBG_FILE "ExFatPartition.cpp"
 #include "../common/DebugMacros.h"
-#include "ExFatVolume.h"
-#include "../common/FsStructs.h"
 #include "../common/FsGetPartitionInfo.h"
-
+#include "ExFatLib.h"
 //------------------------------------------------------------------------------
 // return 0 if error, 1 if no space, else start cluster.
 uint32_t ExFatPartition::bitmapFind(uint32_t cluster, uint32_t count) {
@@ -44,7 +42,7 @@ uint32_t ExFatPartition::bitmapFind(uint32_t cluster, uint32_t count) {
   while (true) {
     uint32_t sector = m_clusterHeapStartSector +
                      (endAlloc >> (m_bytesPerSectorShift + 3));
-    cache = bitmapCacheGet(sector, FsCache::CACHE_FOR_READ);
+    cache = bitmapCachePrepare(sector, FsCache::CACHE_FOR_READ);
     if (!cache) {
       return 0;
     }
@@ -104,7 +102,7 @@ bool ExFatPartition::bitmapModify(uint32_t cluster,
                    (start >> (m_bytesPerSectorShift + 3));
   i = (start >> 3) & m_sectorMask;
   while (true) {
-    cache = bitmapCacheGet(sector++, FsCache::CACHE_FOR_WRITE);
+    cache = bitmapCachePrepare(sector++, FsCache::CACHE_FOR_WRITE);
     if (!cache) {
       DBG_FAIL_MACRO;
       goto fail;
@@ -143,7 +141,7 @@ uint32_t ExFatPartition::chainSize(uint32_t cluster) {
 uint8_t* ExFatPartition::dirCache(DirPos_t* pos, uint8_t options) {
   uint32_t sector = clusterStartSector(pos->cluster);
   sector += (m_clusterMask & pos->position) >> m_bytesPerSectorShift;
-  uint8_t* cache = dataCacheGet(sector, options);
+  uint8_t* cache = dataCachePrepare(sector, options);
   return cache ? cache + (pos->position & m_sectorMask) : nullptr;
 }
 //------------------------------------------------------------------------------
@@ -178,13 +176,16 @@ int8_t ExFatPartition::fatGet(uint32_t cluster, uint32_t* value) {
   }
   sector = m_fatStartSector + (cluster >> (m_bytesPerSectorShift - 2));
 
-  cache = dataCacheGet(sector, FsCache::CACHE_FOR_READ);
+  cache = dataCachePrepare(sector, FsCache::CACHE_FOR_READ);
   if (!cache) {
     return -1;
   }
   next = getLe32(cache + ((cluster << 2) & m_sectorMask));
+  if (next == EXFAT_EOC) {
+    return 0;
+  }
   *value = next;
-  return next == EXFAT_EOC ? 0 : 1;
+  return 1;
 }
 //------------------------------------------------------------------------------
 bool ExFatPartition::fatPut(uint32_t cluster, uint32_t value) {
@@ -195,7 +196,7 @@ bool ExFatPartition::fatPut(uint32_t cluster, uint32_t value) {
     goto fail;
   }
   sector = m_fatStartSector + (cluster >> (m_bytesPerSectorShift - 2));
-  cache = dataCacheGet(sector, FsCache::CACHE_FOR_WRITE);
+  cache = dataCachePrepare(sector, FsCache::CACHE_FOR_WRITE);
   if (!cache) {
     DBG_FAIL_MACRO;
     goto fail;
@@ -244,7 +245,7 @@ uint32_t ExFatPartition::freeClusterCount() {
   uint8_t* cache;
 
   while (true) {
-    cache = dataCacheGet(sector++, FsCache::CACHE_FOR_READ);
+    cache = dataCachePrepare(sector++, FsCache::CACHE_FOR_READ);
     if (!cache) {
       return 0;
     }
@@ -266,7 +267,7 @@ uint32_t ExFatPartition::freeClusterCount() {
   }
 }
 //------------------------------------------------------------------------------
-bool ExFatPartition::init(BlockDevice* dev, uint8_t part) {
+bool ExFatPartition::init(FsBlockDevice* dev, uint8_t part) {
   uint32_t volStart = 0;
   uint8_t* cache;
   pbs_t* pbs;
@@ -294,7 +295,7 @@ bool ExFatPartition::init(BlockDevice* dev, uint8_t part) {
 
   #else
   // Simple 
-  cache = dataCacheGet(0, FsCache::CACHE_FOR_READ);
+  cache = dataCachePrepare(0, FsCache::CACHE_FOR_READ);
   if (part < 1 || part > 4 || !cache) {
     DBG_FAIL_MACRO;
     goto fail;
@@ -308,7 +309,7 @@ bool ExFatPartition::init(BlockDevice* dev, uint8_t part) {
   volStart = getLe32(mp->relativeSectors);
   #endif
 
-  cache = dataCacheGet(volStart, FsCache::CACHE_FOR_READ);
+  cache = dataCachePrepare(volStart, FsCache::CACHE_FOR_READ);
   if (!cache) {
     DBG_FAIL_MACRO;
     goto fail;

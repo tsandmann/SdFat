@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2011-2020 Bill Greiman
+ * Copyright (c) 2011-2021 Bill Greiman
  * This file is part of the SdFat library for SD memory cards.
  *
  * MIT License
@@ -25,9 +25,7 @@
 #define DBG_FILE "FatName.cpp"
 #include "../common/DebugMacros.h"
 #include "../common/FsUtf.h"
-#include "FatFile.h"
-#include "FatVolume.h"
-
+#include "FatLib.h"
 //------------------------------------------------------------------------------
 uint16_t FatFile::getLfnChar(DirLfn_t* ldir, uint8_t i) {
   if (i < 5) {
@@ -54,8 +52,7 @@ size_t FatFile::getName(char* name, size_t size) {
 size_t FatFile::getName7(char* name, size_t size) {
   FatFile dir;
   DirLfn_t* ldir;
-  char* ptr = name;
-  char* end = ptr + size;
+  size_t n = 0;
   if (!isOpen()) {
     DBG_FAIL_MACRO;
     goto fail;
@@ -80,15 +77,19 @@ size_t FatFile::getName7(char* name, size_t size) {
     }
     for (uint8_t i = 0; i < 13; i++) {
       uint16_t c = getLfnChar(ldir, i);
-      if (c == 0 || (ptr + 1) == end) {
+      if (c == 0) {
         goto done;
       }
-      *ptr++ = c >= 0X7F ? '?' : c;
+      if ((n + 1) >= size) {
+        DBG_FAIL_MACRO;
+        goto fail;
+      }
+      name[n++] = c >= 0X7F ? '?' : c;
     }
   }
  done:
-  *ptr = '\0';
-  return ptr - name;
+  name[n] = 0;
+  return n;
 
  fail:
   name[0] = '\0';
@@ -149,8 +150,8 @@ size_t FatFile::getName8(char* name, size_t size) {
       // Save space for zero byte.
       ptr = FsUtf::cpToMb(cp, str, end - 1);
       if (!ptr) {
-        // Truncate name.  Could goto fail.
-        goto done;
+        DBG_FAIL_MACRO;
+        goto fail;
       }
       str = ptr;
     }
@@ -207,8 +208,9 @@ size_t FatFile::getSFN(char* name, size_t size) {
         continue;
       }
     }
-    if ((j + 1u) == size) {
-      break;
+    if ((j + 1u) >= size) {
+      DBG_FAIL_MACRO;
+      goto fail;
     }
     name[j++] = c;
   }

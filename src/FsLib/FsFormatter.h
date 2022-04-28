@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2011-2020 Bill Greiman
+ * Copyright (c) 2011-2021 Bill Greiman
  * This file is part of the SdFat library for SD memory cards.
  *
  * MIT License
@@ -22,34 +22,36 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#ifndef ExFatTypes_h
-#define ExFatTypes_h
-#include "ExFatConfig.h"
-#include "../common/FsUtf.h"
-#include "../common/FsName.h"
-//------------------------------------------------------------------------------
+#ifndef FsFormatter_h
+#define FsFormatter_h
+#include "FatLib/FatLib.h"
+#include "ExFatLib/ExFatLib.h"
 /**
- * \struct DirPos_t
- * \brief Internal type for position in directory file.
+ * \class FsFormatter
+ * \brief Format a exFAT/FAT volume.
  */
-struct DirPos_t {
-  /** current cluster */
-  uint32_t cluster;
-  /** offset */
-  uint32_t position;
-  /** directory is contiguous */
-  bool     isContiguous;
-};
-//------------------------------------------------------------------------------
-/**
- * \class ExName_t
- * \brief Internal type for file name - do not use in user apps.
- */
-class ExName_t : public FsName {
+class FsFormatter {
  public:
-  /** Length of UTF-16 name */
-  size_t nameLength;
-  /** Hash for UTF-16 name */
-  uint16_t nameHash;
+  /**
+   * Format a FAT volume.
+   *
+   * \param[in] dev Block device for volume.
+   * \param[in] secBuffer buffer for writing to volume.
+   * \param[in] pr Print device for progress output.
+   *
+   * \return true for success or false for failure.
+   */
+  bool format(FsBlockDevice* dev, uint8_t* secBuffer, print_t* pr = nullptr) {
+    uint32_t sectorCount = dev->sectorCount();
+    if (sectorCount == 0) {
+      return false;
+    }
+    return sectorCount <= 67108864 ?
+      m_fFmt.format(dev, secBuffer, pr) :
+      m_xFmt.format(dev, secBuffer, pr);
+  }
+ private:
+  FatFormatter m_fFmt;
+  ExFatFormatter m_xFmt;
 };
-#endif  // ExFatTypes_h
+#endif  // FsFormatter_h
