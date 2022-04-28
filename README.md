@@ -1,3 +1,27 @@
+## Teensy Specific SdFat Library
+
+This copy of SdFat has modifications for use with Teensy and USB MTP.
+For general purpose use on non-Teensy boards, use the original SdFat
+published by Bill Greiman.
+
+https://github.com/greiman/SdFat
+
+The Teensy specific modifications are...
+
+* restart() function, useful after media change
+* Detect MBR & GPT partition tables
+* Faster FAT32 formatting with shared SPI
+* Faster FAT32 free space detection
+* Keep free cluster count in memory on ARM boards
+* Enable FAT12
+* Handle Circuit Python filesystems with only 1 FAT
+* Suppress warnings about HS.h and File
+* Define SD_FAT_TEENSY_MODIFIED to identify modified SdFat
+* Block device readSectorsCallback & writeSectorsCallback
+* Examples for non-Teensy boards and version 1 removed
+* Examples slightly modified to compile on all Teensy models
+
+
 ### Warning: This is SdFat Version 2.
 
 Earlier releases of Version 1 are here:
