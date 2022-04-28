@@ -11,11 +11,11 @@ The Teensy specific modifications are...
 * restart() function, useful after media change
 * Detect MBR & GPT partition tables
 * Faster FAT32 formatting with shared SPI
-* Faster FAT32 free space detection
+* Faster FAT32 free space detection, needed for MTP
 * Keep free cluster count in memory on ARM boards
 * Enable FAT12
-* Handle Circuit Python filesystems with only 1 FAT
-* Suppress warnings about HS.h and File
+* Handle Circuit Python filesystem with only 1 FAT
+* Suppress warnings about FS.h and File
 * Define SD_FAT_TEENSY_MODIFIED to identify modified SdFat
 * Block device readSectorsCallback & writeSectorsCallback
 * Examples for non-Teensy boards and version 1 removed
