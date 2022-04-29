@@ -116,7 +116,7 @@ class FatPartition {
   }
   /** \return The number of File Allocation Tables. */
   uint8_t fatCount() const {
-    return 2;
+    return m_fatCount;
   }
   /** \return The logical sector number for the start of the first FAT. */
   uint32_t fatStartSector() const {

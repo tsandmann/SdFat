@@ -316,7 +316,12 @@ typedef uint8_t SdCsPin_t;
  * FAT12 has not been well tested and requires additional flash.
  */
 #ifndef FAT12_SUPPORT
+#if defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__IMXRT1062__)
+// mainly defined for support of USBHost builds... But included T3.5...
 #define FAT12_SUPPORT 1
+#else
+#define FAT12_SUPPORT 0
+#endif
 #endif  // FAT12_SUPPORT
 //------------------------------------------------------------------------------
 /**
