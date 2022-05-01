@@ -15,6 +15,7 @@ The Teensy specific modifications are...
 * Keep free cluster count in memory on ARM boards
 * Enable FAT12
 * Handle Circuit Python filesystem with only 1 FAT
+* Functions to get & set volume label
 * Suppress warnings about FS.h and File
 * Define SD_FAT_TEENSY_MODIFIED to identify modified SdFat
 * Block device readSectorsCallback & writeSectorsCallback

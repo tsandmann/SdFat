@@ -372,6 +372,25 @@ class FsVolume {
    */
 #endif  // ENABLE_ARDUINO_STRING
 
+// TODO: #if ENABLE_VOLUME_LABEL so this isn't compiled on limited memory boards
+  /** Retrieve a volume label name.
+   *
+   * \param[in] character buffer to re receive the name
+   *
+   * \param[in] size of buffer
+   *
+   * \return true for success or false for failure.
+   */
+  bool getVolumeLabel(char *volume_label, size_t cb);
+  /** set a volume label name.
+   *
+   * \param[in] Null terminated string with new volume label
+   *
+   * \return true for success or false for failure.
+   */
+  bool setVolumeLabel(const char *volume_label);
+
+
  protected:
   newalign_t   m_volMem[FS_ALIGN_DIM(ExFatVolume, FatVolume)];
 
