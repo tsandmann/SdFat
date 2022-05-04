@@ -39,7 +39,7 @@ inline char* stackBegin() {
 }
 //------------------------------------------------------------------------------
 inline char* stackPointer() {
-#if  defined(__AVR__)
+#if defined(__AVR__)
   return reinterpret_cast<char*>(SP);
 #elif defined(__arm__)
   register uint32_t sp asm("sp");

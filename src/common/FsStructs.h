@@ -99,7 +99,7 @@ const size_t FS_DIR_SIZE = 32;
 // Reserved characters for exFAT names and FAT LFN.
 inline bool lfnReservedChar(uint8_t c) {
   return c < 0X20 || c == '"' || c == '*' || c == '/' || c == ':'
-      || c == '<' || c == '>' || c == '?' || c == '\\'|| c == '|';
+    || c == '<' || c == '>' || c == '?' || c == '\\'|| c == '|';
 }
 //------------------------------------------------------------------------------
 // Reserved characters for FAT short 8.3 names.

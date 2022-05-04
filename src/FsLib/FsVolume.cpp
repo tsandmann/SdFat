@@ -43,7 +43,7 @@ bool FsVolume::begin(FsBlockDevice* blockDev, bool setCwv, uint8_t part) {
 
  done:
   if (setCwv || !m_cwv) {
-  m_cwv = this;
+    m_cwv = this;
   }
   return true;
 }

@@ -86,7 +86,7 @@
   SD_CARD_ERROR(FUNCTION_NOT_SUPPORTED, "Unsupported SDIO command")
 
 enum {
-#define  SD_CARD_ERROR(e, m) SD_CARD_ERROR_##e,
+#define SD_CARD_ERROR(e, m) SD_CARD_ERROR_##e,
   SD_ERROR_CODE_LIST
 #undef SD_CARD_ERROR
   SD_CARD_ERROR_UNKNOWN

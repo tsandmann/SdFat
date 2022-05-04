@@ -57,7 +57,7 @@ class FatFormatter {
   uint32_t m_sectorCount;
   uint32_t m_totalSectors;
   FsBlockDevice* m_dev;
-  print_t*m_pr;
+  print_t* m_pr;
   uint8_t* m_secBuf;
   uint16_t m_reservedSectorCount;
   uint8_t m_partType;

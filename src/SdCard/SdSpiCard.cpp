@@ -520,7 +520,7 @@ void SharedSpiCard::spiStart() {
     spiActivate();
     spiSelect();
     // Dummy byte to drive MISO busy status.
-    spiSend(0XFF);    
+    spiSend(0XFF);
     m_spiActive = true;
   }
 }
@@ -529,7 +529,7 @@ void SharedSpiCard::spiStop() {
   if (m_spiActive) {
     spiUnselect();
     // Insure MISO goes to low Z.
-    spiSend(0XFF);        
+    spiSend(0XFF);
     spiDeactivate();
     m_spiActive = false;
   }
@@ -780,7 +780,7 @@ bool DedicatedSpiCard::writeSectors(
   m_curSector += ns;
   return m_dedicatedSpi ? true : writeStop();
 
- fail:
+fail:
   return false;
 }
 //------------------------------------------------------------------------------

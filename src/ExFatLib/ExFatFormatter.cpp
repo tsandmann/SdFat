@@ -265,7 +265,7 @@ bool ExFatFormatter::format(FsBlockDevice* dev, uint8_t* secBuf, print_t* pr) {
   setLe64(dbm->size, bitmapSize);
 
   // upcase directory entry.
-  dup = reinterpret_cast<DirUpcase_t*>(secBuf +64);
+  dup = reinterpret_cast<DirUpcase_t*>(secBuf + 64);
   dup->type = EXFAT_TYPE_UPCASE;
   setLe32(dup->checksum, m_upcaseChecksum);
   setLe32(dup->firstCluster, UPCASE_CLUSTER);

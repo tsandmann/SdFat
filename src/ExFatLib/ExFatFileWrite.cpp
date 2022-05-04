@@ -131,7 +131,7 @@ bool ExFatFile::addDirCluster() {
     goto fail;
   }
   sector = m_vol->clusterStartSector(m_curCluster);
-  for (uint32_t i = 0; i < m_vol->sectorsPerCluster(); i++) {
+  for (uint32_t i = 0; i  < m_vol->sectorsPerCluster(); i++) {
     cache = m_vol->dataCachePrepare(sector + i,
                                     FsCache::CACHE_RESERVE_FOR_WRITE);
     if (!cache) {

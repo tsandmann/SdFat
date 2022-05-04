@@ -92,7 +92,7 @@ typedef SdSpiSoftDriver SpiPort_t;
 #elif SPI_DRIVER_SELECT == 3
 class SdSpiBaseClass;
 /** Port type for extrernal SPI driver. */
-typedef SdSpiBaseClass  SpiPort_t;
+typedef SdSpiBaseClass SpiPort_t;
 #else  // SPI_DRIVER_SELECT
 typedef void*  SpiPort_t;
 #endif  // SPI_DRIVER_SELECT
