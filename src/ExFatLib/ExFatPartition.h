@@ -107,6 +107,7 @@ class ExFatPartition {
    * \return true for success or false for failure.
    */
   bool init(FsBlockDevice* dev, uint8_t part);
+  bool init(FsBlockDevice* dev, uint32_t firstSector, uint32_t numberSectors);
   /**
    * Check for device busy.
    *

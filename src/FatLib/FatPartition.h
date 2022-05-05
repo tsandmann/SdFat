@@ -142,6 +142,7 @@ class FatPartition {
    * \return true for success or false for failure.
    */
   bool init(FsBlockDevice* dev, uint8_t part = 1);
+  bool init(FsBlockDevice* dev, uint32_t firstSector, uint32_t numSectors);
   /** \return The number of entries in the root directory for FAT16 volumes. */
   uint16_t rootDirEntryCount() const {
     return m_rootDirEntryCount;

@@ -52,6 +52,18 @@ class ExFatVolume : public ExFatPartition {
     }
     return true;
   }
+  bool begin(FsBlockDevice* dev, bool setCwv, uint32_t firstSector, uint32_t numSectors) {
+    if (!init(dev, firstSector, numSectors)) {
+      return false;
+    }
+    if (!chdir()) {
+      return false;
+    }
+    if (setCwv || !m_cwv) {
+      m_cwv = this;
+    }
+    return true;
+  }
   /**
    * Set volume working directory to root.
    * \return true for success or false for failure.

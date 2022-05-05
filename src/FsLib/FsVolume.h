@@ -51,6 +51,7 @@ class FsVolume {
    * \return true for success or false for failure.
    */
   bool begin(FsBlockDevice* blockDev, bool setCwv = true, uint8_t part = 1);
+  bool begin(FsBlockDevice* blockDev, bool setCwv, uint32_t firstSector, uint32_t numSectors);
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
   uint32_t __attribute__((error("use sectorsPerCluster()"))) blocksPerCluster();
 #endif  // DOXYGEN_SHOULD_SKIP_THIS

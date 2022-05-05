@@ -48,6 +48,31 @@ bool FsVolume::begin(FsBlockDevice* blockDev, bool setCwv, uint8_t part) {
   return true;
 }
 //------------------------------------------------------------------------------
+bool FsVolume::begin(FsBlockDevice* blockDev, bool setCwv,
+ uint32_t firstSector, uint32_t numSectors) {
+  m_blockDev = blockDev;
+  m_fVol = nullptr;
+  m_xVol = new (m_volMem) ExFatVolume;
+  if (m_xVol && m_xVol->begin(m_blockDev, false, firstSector, numSectors)) {
+    goto done;
+  }
+  m_xVol = nullptr;
+  m_fVol = new (m_volMem) FatVolume;
+  if (m_fVol && m_fVol->begin(m_blockDev, false, firstSector, numSectors)) {
+    goto done;
+  }
+  m_cwv = nullptr;
+  m_fVol = nullptr;
+  return false;
+
+ done:
+  if (setCwv || !m_cwv) {
+    m_cwv = this;
+  }
+  return true;
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 bool FsVolume::ls(print_t* pr, const char* path, uint8_t flags) {
   FsBaseFile dir;
   return dir.open(this, path, O_RDONLY) && dir.ls(pr, flags);
