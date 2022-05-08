@@ -389,20 +389,6 @@ typedef uint8_t SdCsPin_t;
 
 //------------------------------------------------------------------------------
 /**
- * Set SUPPORT_GPT_AND_EXTENDED_PATITIONS  nonzero to support partitions
- * on Extended MBR extended partitions and some support for GPT configured
- * drives.
- */
-#ifndef SUPPORT_GPT_AND_EXTENDED_PATITIONS
-#if defined(__arm__) && !defined(__MKL26Z64__)
-#define SUPPORT_GPT_AND_EXTENDED_PATITIONS 1
-#else  // __arm__
-#define SUPPORT_GPT_AND_EXTENDED_PATITIONS 0
-#endif  // __arm__
-#endif // SUPPORT_GPT_AND_EXTENDED_PATITIONS
-  
-//------------------------------------------------------------------------------
-/**
  * Set USE_MULTI_SECTOR_IO nonzero to use multi-sector SD read/write.
  *
  * Don't use mult-sector read/write on small AVR boards.

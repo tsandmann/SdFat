@@ -95,7 +95,7 @@ const uint8_t UNGETC_BUF_SIZE = 2;
 /** Seek relative to current position. */
 #define SEEK_CUR 1
 #endif  // SEEK_CUR
-#ifndef  SEEK_END
+#ifndef SEEK_END
 /** Seek relative to end-of-file. */
 #define SEEK_END 2
 #endif  // SEEK_END
@@ -440,7 +440,7 @@ class StdioStream : private StreamBaseFile {
     return n > 0 ? n : 0;
   }
   //----------------------------------------------------------------------------
-  /**  Print a number.
+  /** Print a number.
    *
    * \param[in] val the number to be printed.
    *

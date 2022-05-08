@@ -24,7 +24,6 @@
  */
 #define DBG_FILE "ExFatPartition.cpp"
 #include "../common/DebugMacros.h"
-#include "../common/FsGetPartitionInfo.h"
 #include "ExFatLib.h"
 //------------------------------------------------------------------------------
 // return 0 if error, 1 if no space, else start cluster.
@@ -271,48 +270,31 @@ bool ExFatPartition::init(FsBlockDevice* dev, uint8_t part) {
   uint32_t volStart = 0;
   uint8_t* cache;
   pbs_t* pbs;
-  #if SUPPORT_GPT_AND_EXTENDED_PATITIONS 
-  uint32_t firstLBA;
-  #else
+  BpbExFat_t* bpb;
   MbrSector_t* mbr;
   MbrPart_t* mp;
-  #endif
-  BpbExFat_t* bpb;
 
   m_fatType = 0;
   m_blockDev = dev;
   cacheInit(m_blockDev);
-
-
-  #if SUPPORT_GPT_AND_EXTENDED_PATITIONS 
-  cache = cacheClear(); // get buffer to use. 
-  FsGetPartitionInfo::voltype_t vt = FsGetPartitionInfo::getPartitionInfo(m_blockDev, part,cache, &firstLBA);
-  if ((vt == FsGetPartitionInfo::INVALID_VOL) || (vt == FsGetPartitionInfo::OTHER_VOL)) {
-    DBG_FAIL_MACRO;
-    goto fail;    
-  }
-  volStart = firstLBA;
-
-  #else
-  // Simple 
   cache = dataCachePrepare(0, FsCache::CACHE_FOR_READ);
-  if (part < 1 || part > 4 || !cache) {
+  if (part > 4 || !cache) {
     DBG_FAIL_MACRO;
     goto fail;
   }
-  mbr = reinterpret_cast<MbrSector_t*>(cache);
-  mp = &mbr->part[part - 1];
-  if ((mp->boot != 0 && mp->boot != 0X80) || mp->type == 0) {
-    DBG_FAIL_MACRO;
-    goto fail;
-  }
-  volStart = getLe32(mp->relativeSectors);
-  #endif
-
-  cache = dataCachePrepare(volStart, FsCache::CACHE_FOR_READ);
-  if (!cache) {
-    DBG_FAIL_MACRO;
-    goto fail;
+  if (part >= 1) {
+    mbr = reinterpret_cast<MbrSector_t*>(cache);
+    mp = &mbr->part[part - 1];
+    if ((mp->boot != 0 && mp->boot != 0X80) || mp->type == 0) {
+      DBG_FAIL_MACRO;
+      goto fail;
+    }
+    volStart = getLe32(mp->relativeSectors);
+    cache = dataCachePrepare(volStart, FsCache::CACHE_FOR_READ);
+    if (!cache) {
+      DBG_FAIL_MACRO;
+      goto fail;
+    }
   }
   pbs = reinterpret_cast<pbs_t*>(cache);
   if (strncmp(pbs->oemName, "EXFAT", 5)) {

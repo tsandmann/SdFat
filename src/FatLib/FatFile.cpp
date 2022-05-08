@@ -72,11 +72,11 @@ bool FatFile::addDirCluster() {
   sector = m_vol->clusterStartSector(m_curCluster);
   for (uint8_t i = 0; i < m_vol->sectorsPerCluster(); i++) {
     pc = m_vol->dataCachePrepare(sector + i, FsCache::CACHE_RESERVE_FOR_WRITE);
-  if (!pc) {
-    DBG_FAIL_MACRO;
-    goto fail;
-  }
-  memset(pc, 0, m_vol->bytesPerSector());
+    if (!pc) {
+      DBG_FAIL_MACRO;
+      goto fail;
+    }
+    memset(pc, 0, m_vol->bytesPerSector());
   }
   // Set position to EOF to avoid inconsistent curCluster/curPosition.
   m_curPosition += m_vol->bytesPerCluster();

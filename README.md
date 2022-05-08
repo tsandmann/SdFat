@@ -9,7 +9,7 @@ https://github.com/greiman/SdFat
 The Teensy specific modifications are...
 
 * restart() function, useful after media change
-* Detect MBR & GPT partition tables
+* FsVolume begin() with explicit partition location
 * Faster FAT32 formatting with shared SPI
 * Faster FAT32 free space detection, needed for MTP
 * Keep free cluster count in memory on ARM boards

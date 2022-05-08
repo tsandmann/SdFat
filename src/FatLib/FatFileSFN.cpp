@@ -56,11 +56,11 @@ bool FatFile::open(FatFile* dirFile, FatSfn_t* fname, oflag_t oflag) {
     if (dir->name[0] == FAT_NAME_DELETED || dir->name[0] == FAT_NAME_FREE) {
       if (!emptyFound) {
         emptyIndex = index;
-      emptyFound = true;
+        emptyFound = true;
       }
       if (dir->name[0] == FAT_NAME_FREE) {
-      break;
-    }
+        break;
+      }
       lfnOrd = 0;
     } else if (isFileOrSubdir(dir)) {
       if (!memcmp(fname->sfn, dir->name, 11)) {

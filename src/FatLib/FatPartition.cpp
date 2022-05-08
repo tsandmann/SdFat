@@ -25,7 +25,6 @@
 #include <string.h>
 #define DBG_FILE "FatPartition.cpp"
 #include "../common/DebugMacros.h"
-#include "../common/FsGetPartitionInfo.h"
 #include "FatLib.h"
 
 //------------------------------------------------------------------------------
@@ -422,14 +421,7 @@ bool FatPartition::init(FsBlockDevice* dev, uint8_t part) {
   m_blockDev = dev;
   pbs_t* pbs;
   BpbFat32_t* bpb;
-  uint8_t mbrType = 0;
-  #if SUPPORT_GPT_AND_EXTENDED_PATITIONS 
-  uint32_t firstLBA;
-  #else
   MbrSector_t* mbr;
-  MbrPart_t* mp;
-  #endif
-
   uint8_t tmp;
   m_fatType = 0;
   m_allocSearchStart = 1;
@@ -437,30 +429,23 @@ bool FatPartition::init(FsBlockDevice* dev, uint8_t part) {
 #if USE_SEPARATE_FAT_CACHE
   m_fatCache.init(dev);
 #endif  // USE_SEPARATE_FAT_CACHE
+  // if part == 0 assume super floppy with FAT boot sector in sector zero
+  // if part > 0 assume mbr volume with partition table
+  if (part) {
+    if (part > 4) {
+      DBG_FAIL_MACRO;
+      goto fail;
+    }
+    mbr = reinterpret_cast<MbrSector_t*>
+          (dataCachePrepare(0, FsCache::CACHE_FOR_READ));
+    MbrPart_t* mp = mbr->part + part - 1;
 
-  #if SUPPORT_GPT_AND_EXTENDED_PATITIONS 
-  FsGetPartitionInfo::voltype_t vt = FsGetPartitionInfo::getPartitionInfo(m_blockDev, part, cacheClear(), &firstLBA, 
-        nullptr, nullptr, nullptr, &mbrType);
-  if ((vt == FsGetPartitionInfo::INVALID_VOL) || (vt == FsGetPartitionInfo::OTHER_VOL)) {
-    DBG_FAIL_MACRO;
-    goto fail;    
+    if (!mbr || mp->type == 0 || (mp->boot != 0 && mp->boot != 0X80)) {
+      DBG_FAIL_MACRO;
+      goto fail;
+    }
+    volumeStartSector = getLe32(mp->relativeSectors);
   }
-  volumeStartSector = firstLBA;
-  #else
-  if (part < 1 || part > 4) {
-    DBG_FAIL_MACRO;
-    goto fail;
-  }
-  mbr = reinterpret_cast<MbrSector_t*>(dataCachePrepare(0, FsCache::CACHE_FOR_READ));
-  mp = mbr->part + part - 1;
-
-  if (!mbr || mp->type == 0 || (mp->boot != 0 && mp->boot != 0X80)) {
-    DBG_FAIL_MACRO;
-    goto fail;
-  }
-  volumeStartSector = getLe32(mp->relativeSectors);
-  #endif
-
   pbs = reinterpret_cast<pbs_t*>
         (dataCachePrepare(volumeStartSector, FsCache::CACHE_FOR_READ));
   bpb = reinterpret_cast<BpbFat32_t*>(pbs->bpb);
@@ -468,9 +453,8 @@ bool FatPartition::init(FsBlockDevice* dev, uint8_t part) {
     DBG_FAIL_MACRO;
     goto fail;
   }
-
-  m_fatCount = bpb->fatCount;
   // handle fat counts 1 or 2...
+  m_fatCount = bpb->fatCount;
   if ((m_fatCount != 1) && (m_fatCount != 2)) {
     DBG_FAIL_MACRO;
     goto fail;
@@ -516,7 +500,7 @@ bool FatPartition::init(FsBlockDevice* dev, uint8_t part) {
   // Indicate unknown number of free clusters.
   setFreeClusterCount(-1);
   // FAT type is determined by cluster count
-  if ((mbrType == 1) || (clusterCount < 4085)) {
+  if (clusterCount < 4085) {
     m_fatType = 12;
     if (!FAT12_SUPPORT) {
       DBG_FAIL_MACRO;
