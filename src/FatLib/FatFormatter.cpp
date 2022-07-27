@@ -87,7 +87,7 @@ struct initFatDirState {
   uint16_t count;
   uint16_t dotcount;
 };
-static const uint8_t * initFatDirCallback(uint32_t sector, void *context) {
+static const uint8_t * initFatDirCallback([[maybe_unused]] uint32_t sector, void *context) {
   struct initFatDirState * state = (struct initFatDirState *)context;
   if (state->pr && ++state->count >= state->dotcount) {
     state->pr->write(".");

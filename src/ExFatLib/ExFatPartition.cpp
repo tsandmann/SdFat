@@ -324,7 +324,7 @@ bool ExFatPartition::init(FsBlockDevice* dev, uint8_t part) {
   return false;
 }
 //------------------------------------------------------------------------------
-bool ExFatPartition::init(FsBlockDevice* dev, uint32_t firstSector, uint32_t numSectors) {
+bool ExFatPartition::init(FsBlockDevice* dev, uint32_t firstSector, [[maybe_unused]] uint32_t numSectors) {
   uint32_t volStart = firstSector;
   uint8_t* cache;
   pbs_t* pbs;
