@@ -26,6 +26,11 @@
 #include "SdioTeensy.h"
 #include "SdCardInfo.h"
 #include "SdioCard.h"
+#if defined(__has_include) && __has_include("EventResponder.h") && __has_include("arduino_freertos.h")
+#include "EventResponder.h"
+#include "arduino_freertos.h"
+#define SDIO_FREERTOS 1
+#endif
 //==============================================================================
 // limit of K66 due to errata KINETIS_K_0N65N.
 const uint32_t MAX_BLKCNT = 0XFFFF;
@@ -203,6 +208,9 @@ static uint8_t m_errorCode = SD_CARD_ERROR_INIT_NOT_CALLED;
 static uint32_t m_errorLine = 0;
 static uint32_t m_rca;
 static volatile bool m_dmaBusy = false;
+#if defined(SDIO_FREERTOS)
+static EventResponder m_dma_event;
+#endif
 static volatile uint32_t m_irqstat;
 static uint32_t m_sdClkKhz = 0;
 static uint32_t m_ocr;
@@ -287,6 +295,9 @@ static void sdIrs() {
   SDHC_MIX_CTRL &= ~(SDHC_MIX_CTRL_AC23EN | SDHC_MIX_CTRL_DMAEN);
 #endif
   m_dmaBusy = false;
+#if defined(SDIO_FREERTOS)
+  m_dma_event.triggerEvent();
+#endif
 }
 //==============================================================================
 // GPIO and clock functions.
@@ -422,6 +433,15 @@ static bool cardCMD6(uint32_t arg, uint8_t* status) {
 //------------------------------------------------------------------------------
 static void enableDmaIrs() {
   m_dmaBusy = true;
+#if defined(SDIO_FREERTOS)
+  m_dma_event.setContext(::xTaskGetCurrentTaskHandle());
+  m_dma_event.attachImmediate([](EventResponderRef event) {
+    BaseType_t higher_woken { pdFALSE };
+    vTaskNotifyGiveFromISR(reinterpret_cast<TaskHandle_t>(event.getContext()), &higher_woken);
+    portYIELD_FROM_ISR(higher_woken);
+    portDATA_SYNC_BARRIER(); // mitigate arm errata #838869
+  });
+#endif // SDIO_FREERTTOS
   m_irqstat = 0;
 }
 //------------------------------------------------------------------------------
@@ -479,9 +499,11 @@ static bool isBusyDat() {
   return SDHC_PRSSTAT & (1 << 24) ? false : true;
 }
 //------------------------------------------------------------------------------
+#if !defined(SDIO_FREERTOS)
 static bool isBusyDMA() {
   return m_dmaBusy;
 }
+#endif
 //------------------------------------------------------------------------------
 static bool isBusyFifoRead() {
   return !(SDHC_PRSSTAT & SDHC_PRSSTAT_BREN);
@@ -598,16 +620,24 @@ static bool yieldTimeout(bool (*fcn)()) {
       m_busyFcn = 0;
       return true;
     }
+#if !defined(SDIO_FREERTOS)
     yield();
+#endif
   }
   m_busyFcn = 0;
   return false;  // Caller will set errorCode.
 }
 //------------------------------------------------------------------------------
 static bool waitDmaStatus() {
+#if !defined(SDIO_FREERTOS)
   if (yieldTimeout(isBusyDMA)) {
     return false;  // Caller will set errorCode.
   }
+#else
+  if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY) != 1) {
+    return false;
+  }
+#endif // SDIO_FREERTTOS
   return (m_irqstat & SDHC_IRQSTAT_TC) && !(m_irqstat & SDHC_IRQSTAT_ERROR);
 }
 //------------------------------------------------------------------------------
